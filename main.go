@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/go-chi/chi/v5"
 )
 
 // struct with field fileServerHits
@@ -13,7 +15,7 @@ type apiConfig struct {
 
 func main() {
 	//create new server instance to handle requests
-	corsMux := http.NewServeMux()
+	r := chi.NewRouter()
 
 	//initialize the file server
 	fileServer := http.FileServer(http.Dir("."))
@@ -24,14 +26,14 @@ func main() {
 	}
 
 	//serve the static index.html file
-	corsMux.Handle("/", cfg.middlewareFileHits(fileServer))
+	r.Mount("/", cfg.MiddlewareFileHits(fileServer))
 	//serve the assets folder containing the chirpy logo
-	corsMux.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets"))))
-	corsMux.HandleFunc("/metrics", cfg.handlerMetrics)
-	corsMux.HandleFunc("/healthz", handlerHealthCheck)
+	r.Mount("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets"))))
+	r.Get("/metrics", cfg.HandlerMetrics)
+	r.Get("/healthz", HandlerHealthCheck)
 
 	//pass in the handler func to the middleware
-	handler := corsMiddleware(corsMux)
+	handler := CorsMiddleware(r)
 
 	server := &http.Server{
 		Addr:         ":8080",
