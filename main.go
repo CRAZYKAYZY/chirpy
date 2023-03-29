@@ -3,8 +3,11 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
+	"github.com/CRAZYKAYZY/chirpy/internal/database"
+	"github.com/CRAZYKAYZY/chirpy/internal/handlers"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -14,6 +17,17 @@ type apiConfig struct {
 }
 
 func main() {
+
+	// Create a new Database
+	db, err := database.NewDB("database.json")
+	if err != nil {
+		panic(err)
+	}
+	if db == nil {
+		panic("Failed to open database file")
+	}
+	defer os.Remove("database.json")
+
 	//create new server instance to handle requests
 	r := chi.NewRouter()
 
@@ -25,12 +39,23 @@ func main() {
 		fileServerHits: 0,
 	}
 
+	//create new handler for the /api endpoints
+	apiRoute := chi.NewRouter()
+
+	// mount the api router on /api namespace
+	r.Mount("/api", apiRoute)
+
+	adminApi := chi.NewRouter()
+
+	r.Mount("/admin", adminApi)
+
 	//serve the static index.html file
 	r.Mount("/", cfg.MiddlewareFileHits(fileServer))
 	//serve the assets folder containing the chirpy logo
 	r.Mount("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets"))))
-	r.Get("/metrics", cfg.HandlerMetrics)
-	r.Get("/healthz", HandlerHealthCheck)
+	adminApi.Get("/metrics", cfg.HandlerMetrics)
+	apiRoute.Get("/healthz", HandlerHealthCheck)
+	apiRoute.Post("/chirps", handlers.CreateChirpHandler(db))
 
 	//pass in the handler func to the middleware
 	handler := CorsMiddleware(r)
