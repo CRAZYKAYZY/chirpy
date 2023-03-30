@@ -57,8 +57,8 @@ func (db *DB) writeDB(dbStructure DBStructure) error {
 }
 
 func (db *DB) loadDB() (DBStructure, error) {
-	db.mux.Lock()
-	defer db.mux.Unlock()
+	db.mux.RLock()
+	defer db.mux.RUnlock()
 
 	data, err := ioutil.ReadFile(db.path)
 

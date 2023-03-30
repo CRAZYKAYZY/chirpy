@@ -5,9 +5,6 @@ import (
 )
 
 func (db *DB) CreateChirp(body string) (Chirp, error) {
-	// Lock the database for writing
-	db.mux.Lock()
-	defer db.mux.Unlock()
 
 	// Load the database into memory
 	dbStructure, err := db.loadDB()
@@ -37,9 +34,6 @@ func (db *DB) CreateChirp(body string) (Chirp, error) {
 
 // GetChirps returns all chirps in the database
 func (db *DB) GetChirps() ([]Chirp, error) {
-	// Lock the database for reading
-	db.mux.RLock()
-	defer db.mux.RUnlock()
 
 	// Load the database into memory
 	dbStructure, err := db.loadDB()

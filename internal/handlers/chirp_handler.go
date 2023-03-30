@@ -3,16 +3,18 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/CRAZYKAYZY/chirpy/internal/database"
+	"github.com/go-chi/chi/v5"
 )
 
 // create a respond struct type
 type ChirpRes struct {
 	ID    int    `json:"id"`
 	Body  string `json:"body"`
-	Valid bool   `json:"valid"`
+	Valid bool   `json:"valid,omitempty"`
 	Error string `json:"error,omitempty"`
 }
 
@@ -41,8 +43,8 @@ func CreateChirpHandler(db *database.DB) http.HandlerFunc {
 		}
 
 		res := ChirpRes{
-			ID:   chirp.ID,
-			Body: Profane(chirp.Body),
+			Valid: true,
+			Body:  Profane(chirp.Body),
 		}
 
 		json.NewEncoder(w).Encode(res)
@@ -54,6 +56,61 @@ func CreateChirpHandler(db *database.DB) http.HandlerFunc {
 			return
 		}
 	}
+}
+
+func GetChirpsHandler(db *database.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		chirps, err := db.GetChirps()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		var res []ChirpRes
+		for _, chirp := range chirps {
+			res = append(res, ChirpRes{
+				ID:   chirp.ID,
+				Body: chirp.Body,
+			})
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		err = json.NewEncoder(w).Encode(res)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+}
+
+func GetChirpHandler(db *database.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		idStr := chi.URLParam(r, "id")
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			http.Error(w, "Invalid id", http.StatusBadRequest)
+			return
+		}
+		chirps, err := db.GetChirps()
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		respondWithJSON(w, http.StatusOK, chirps[id-1])
+	}
+}
+
+func respondWithError(w http.ResponseWriter, status int, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(map[string]string{"error": message})
+}
+
+func respondWithJSON(w http.ResponseWriter, status int, payload interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(payload)
 }
 
 func Profane(Chirp string) string {
