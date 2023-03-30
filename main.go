@@ -39,23 +39,23 @@ func main() {
 		fileServerHits: 0,
 	}
 
-	//create new handler for the /api endpoints
-	apiRoute := chi.NewRouter()
-
-	// mount the api router on /api namespace
-	r.Mount("/api", apiRoute)
-
+	//create admin handler and mount to /admin namespace
 	adminApi := chi.NewRouter()
-
 	r.Mount("/admin", adminApi)
+	adminApi.Get("/metrics", cfg.HandlerMetrics)
 
 	//serve the static index.html file
 	r.Mount("/", cfg.MiddlewareFileHits(fileServer))
 	//serve the assets folder containing the chirpy logo
 	r.Mount("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets"))))
-	adminApi.Get("/metrics", cfg.HandlerMetrics)
+
+	//create new handler for the /api endpoints and mount on /api namespace
+	apiRoute := chi.NewRouter()
+	r.Mount("/api", apiRoute)
 	apiRoute.Get("/healthz", HandlerHealthCheck)
 	apiRoute.Post("/chirps", handlers.CreateChirpHandler(db))
+	apiRoute.Get("/chirps", handlers.GetChirpsHandler(db))
+	apiRoute.Get("/chirps/{id}", handlers.GetChirpHandler(db))
 
 	//pass in the handler func to the middleware
 	handler := CorsMiddleware(r)
