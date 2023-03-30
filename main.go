@@ -56,6 +56,9 @@ func main() {
 	apiRoute.Post("/chirps", handlers.CreateChirpHandler(db))
 	apiRoute.Get("/chirps", handlers.GetChirpsHandler(db))
 	apiRoute.Get("/chirps/{id}", handlers.GetChirpHandler(db))
+	apiRoute.Post("/users", handlers.CreateUserHandler(db))
+	apiRoute.Get("/users", handlers.GetAllUsersHandler(db))
+	apiRoute.Get("/users/{id}", handlers.GetUsersHandler(db))
 
 	//pass in the handler func to the middleware
 	handler := CorsMiddleware(r)
