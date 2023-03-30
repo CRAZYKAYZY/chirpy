@@ -45,7 +45,10 @@ func (db *DB) ensureDB() error {
 	_, err := os.Stat(db.path)
 	if os.IsNotExist(err) {
 		fmt.Println("Db does not exist, creating new...")
-		return db.writeDB(DBStructure{Chirps: make(map[int]Chirp)})
+		return db.writeDB(DBStructure{
+			Chirps: make(map[int]Chirp),
+			Users:  make(map[int]User),
+		})
 	}
 	return err
 }

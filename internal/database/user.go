@@ -23,12 +23,13 @@ func (db *DB) CreateUser(email, password string) (User, error) {
 
 	id := len(dbStructure.Users) + 1
 
+	// Generate hashed password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return User{}, err
 	}
-	fmt.Printf("hashed password in CreateUser: %s", hashedPassword)
 
+	// Create a new user with hashed password
 	user := User{
 		ID:       id,
 		Email:    email,

@@ -24,22 +24,24 @@ func CreateUserHandler(db *database.DB) http.HandlerFunc {
 			return
 		}
 
-		chirp, err := db.CreateUser(req.Email, req.Password)
+		user, err := db.CreateUser(req.Email, req.Password)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		// Write the response
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-
 		res := UserRes{
-			ID:    chirp.ID,
-			Email: chirp.Email,
+			ID:    user.ID,
+			Email: user.Email,
 		}
 
-		json.NewEncoder(w).Encode(res)
+		// Write the response
+		w.Header().Set("Content-Type", "application/json")
+		err = json.NewEncoder(w).Encode(res)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 }
 
