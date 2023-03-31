@@ -60,6 +60,8 @@ func main() {
 	apiRoute.Get("/users", handlers.GetAllUsersHandler(db))
 	apiRoute.Get("/users/{id}", handlers.GetUsersHandler(db))
 
+	apiRoute.Post("/login", handlers.Login_handler(db))
+
 	//pass in the handler func to the middleware
 	handler := CorsMiddleware(r)
 
