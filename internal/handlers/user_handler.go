@@ -10,8 +10,9 @@ import (
 )
 
 type UserRes struct {
-	ID    int    `json:"id"`
-	Email string `json:"email"`
+	ID       int    `json:"id"`
+	Email    string `json:"email"`
+	Password string `json:"password,omitempty"`
 }
 
 func CreateUserHandler(db *database.DB) http.HandlerFunc {
@@ -31,8 +32,9 @@ func CreateUserHandler(db *database.DB) http.HandlerFunc {
 		}
 
 		res := UserRes{
-			ID:    user.ID,
-			Email: user.Email,
+			ID:       user.ID,
+			Email:    user.Email,
+			Password: user.Password,
 		}
 
 		// Write the response
@@ -85,7 +87,8 @@ func GetAllUsersHandler(db *database.DB) http.HandlerFunc {
 		var res []UserRes
 		for _, user := range users {
 			res = append(res, UserRes{
-				ID: user.ID,
+				ID:    user.ID,
+				Email: user.Email,
 			})
 		}
 
