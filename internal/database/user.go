@@ -3,6 +3,7 @@ package database
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -86,4 +87,35 @@ func (db *DB) GetUsers() ([]User, error) {
 	}
 
 	return users, nil
+}
+
+func (db *DB) UpdateUser(userID int, email, password string) (User, error) {
+	user, err := db.GetUser(userID)
+	if err != nil {
+		return User{}, err
+	}
+
+	id := user.ID
+
+	dbStructure, err := db.loadDB()
+	if err != nil {
+		return User{}, err
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return User{}, err
+	}
+
+	// Replace the user at that index with the updated user
+	user.Email = email
+	user.Password = string(hashedPassword)
+	dbStructure.Users[id] = user
+
+	err = db.writeDB(dbStructure)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return user, nil
 }
