@@ -1,6 +1,7 @@
 package main
 
 import (
+	//"log"
 	"net/http"
 )
 
@@ -14,6 +15,7 @@ func CorsMiddleware(next http.Handler) http.Handler {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
+		//log.Printf("Received request: %s\n", r.Header)
 		next.ServeHTTP(w, r)
 	})
 }

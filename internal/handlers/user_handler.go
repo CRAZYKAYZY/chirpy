@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/CRAZYKAYZY/chirpy/internal/config"
 	"github.com/CRAZYKAYZY/chirpy/internal/database"
 	"github.com/go-chi/chi/v5"
-	"github.com/golang-jwt/jwt/v5"
+	"github.com/golang-jwt/jwt"
 )
 
 type CreateUserRequest struct {
@@ -107,26 +106,8 @@ func GetAllUsersHandler(db *database.DB) http.HandlerFunc {
 
 func UpdateUsersHandler(db *database.DB, cfg *config.ApiConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			http.Error(w, "Authorization header missing", http.StatusUnauthorized)
-			return
-		}
-
-		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
-		token, err := jwt.ParseWithClaims(tokenString, jwt.MapClaims{}, func(token *jwt.Token) (interface{}, error) {
-			// Return the secret key used to sign the token
-			return []byte(cfg.JwtSecret), nil
-		})
-		if err != nil {
-			http.Error(w, "Unauthorized Token", http.StatusUnauthorized)
-			return
-		}
-		claims, ok := token.Claims.(jwt.MapClaims)
-		if !ok || !token.Valid {
-			http.Error(w, "Unauthorized, Not Valid", http.StatusUnauthorized)
-			return
-		}
+		// Parse the claims
+		claims := r.Context().Value("claims").(jwt.MapClaims)
 
 		// Extract the user ID from the token claim's Subject
 		userID, err := strconv.Atoi(claims["sub"].(string))
@@ -149,7 +130,6 @@ func UpdateUsersHandler(db *database.DB, cfg *config.ApiConfig) http.HandlerFunc
 			respondWithError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-		// fmt.Printf("updated user: %v\n", updatedUser)
 		// Write the response
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
