@@ -10,6 +10,7 @@ import (
 	"github.com/CRAZYKAYZY/chirpy/internal/config"
 	"github.com/CRAZYKAYZY/chirpy/internal/database"
 	"github.com/CRAZYKAYZY/chirpy/internal/handlers"
+	"github.com/CRAZYKAYZY/chirpy/internal/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/joho/godotenv"
 )
@@ -37,6 +38,9 @@ func main() {
 	//create new server instance to handle requests
 	r := chi.NewRouter()
 
+	//pass in the handler func to the middleware
+	handler := CorsMiddleware(r)
+
 	//initialize the file server
 	fileServer := http.FileServer(http.Dir("."))
 
@@ -45,6 +49,19 @@ func main() {
 		FileServerHits: 0,
 		JwtSecret:      jwtSecret,
 	}
+
+	cfgMiddle := &middleware.MyConfig{
+		ApiConfig: config.ApiConfig{
+			JwtSecret: jwtSecret,
+		},
+	}
+
+	//public routes
+	public := chi.NewRouter()
+	r.Mount("/public", public)
+
+	public.Post("/login", handlers.Login_handler(db, cfg))
+	public.Post("/users", handlers.CreateUserHandler(db))
 
 	//create admin handler and mount to /admin namespace
 	adminApi := chi.NewRouter()
@@ -58,19 +75,15 @@ func main() {
 
 	//create new handler for the /api endpoints and mount on /api namespace
 	apiRoute := chi.NewRouter()
+	apiRoute.Use(cfgMiddle.AuthMiddleware)
 	r.Mount("/api", apiRoute)
 	apiRoute.Post("/chirps", handlers.CreateChirpHandler(db))
 	apiRoute.Get("/chirps", handlers.GetChirpsHandler(db))
 	apiRoute.Get("/chirps/{id}", handlers.GetChirpHandler(db))
-	apiRoute.Post("/users", handlers.CreateUserHandler(db))
+
 	apiRoute.Get("/users", handlers.GetAllUsersHandler(db))
 	apiRoute.Get("/users/{id}", handlers.GetUsersHandler(db))
 	apiRoute.Put("/users", handlers.UpdateUsersHandler(db, cfg))
-
-	apiRoute.Post("/login", handlers.Login_handler(db, cfg))
-
-	//pass in the handler func to the middleware
-	handler := CorsMiddleware(r)
 
 	server := &http.Server{
 		Addr:         ":8080",
@@ -80,7 +93,6 @@ func main() {
 	}
 
 	//start and listen to incoming server requests
-	fmt.Println(jwtSecret)
 	fmt.Printf("Server listening on port %v...\n", server.Addr)
 	if err := server.ListenAndServe(); err != nil {
 		panic(err)
