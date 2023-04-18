@@ -89,20 +89,26 @@ func (db *DB) GetUsers() ([]User, error) {
 	return users, nil
 }
 
-func (db *DB) UpdateUser(userID int, email, password string) (User, error) {
+func (db *DB) UpdateUser(userID int, email, currentPassword, newPassword string) (User, error) {
 	user, err := db.GetUser(userID)
 	if err != nil {
 		return User{}, err
 	}
 
-	id := user.ID
+	//id := user.ID
 
-	dbStructure, err := db.loadDB()
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(currentPassword)); err != nil {
+		return User{}, fmt.Errorf("invalid pass")
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {
 		return User{}, err
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	fmt.Println(string(hashedPassword))
+
+	dbStructure, err := db.loadDB()
 	if err != nil {
 		return User{}, err
 	}
@@ -110,7 +116,7 @@ func (db *DB) UpdateUser(userID int, email, password string) (User, error) {
 	// Replace the user at that index with the updated user
 	user.Email = email
 	user.Password = string(hashedPassword)
-	dbStructure.Users[id] = user
+	dbStructure.Users[userID] = user
 
 	err = db.writeDB(dbStructure)
 	if err != nil {
