@@ -17,6 +17,12 @@ type CreateUserRequest struct {
 	Password string `json:"password"`
 }
 
+type UpdateUserRequest struct {
+	Email           string `json:"email"`
+	CurrentPassword string `json:"currentpassword"`
+	NewPassword     string `json:"newpassword"`
+}
+
 type UserRes struct {
 	ID       int    `json:"id"`
 	Email    string `json:"email"`
@@ -117,14 +123,14 @@ func UpdateUsersHandler(db *database.DB, cfg *config.ApiConfig) http.HandlerFunc
 		}
 
 		// Parse the request body
-		var req CreateUserRequest
+		var req UpdateUserRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			respondWithError(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
 		// Update the user in the database
-		updatedUser, err := db.UpdateUser(userID, req.Email, req.Password)
+		updatedUser, err := db.UpdateUser(userID, req.Email, req.CurrentPassword, req.NewPassword)
 		if err != nil {
 			fmt.Printf("error updating user: %v", err)
 			respondWithError(w, http.StatusInternalServerError, err.Error())
